@@ -45,13 +45,13 @@ package demo.parallel;
  * @author Alexander Kouznetsov, Tristan Yan
  */
 public class Complex {
-    
+
     private double re;   // the real part
     private double im;   // the imaginary part
 
-    /** 
+    /**
      * create a new object with the given real and imaginary parts
-     * 
+     *
      * @param real a complex number real part
      * @param imag a complex number imaginary part 
      */
@@ -61,7 +61,23 @@ public class Complex {
     }
 
     /**
-     * Add operation.
+     * Getter for real part.
+     * @return real part
+     */
+    public double getRe() {
+        return re;
+    }
+
+    /**
+     * Getter for imaginary part.
+     * @return imaginary part
+     */
+    public double getIm() {
+        return im;
+    }
+
+    /**
+     * Add operation. (Мутация this)
      * @param b summand
      * @return this Complex object whose value is (this + b)
      */
@@ -72,7 +88,16 @@ public class Complex {
     }
 
     /**
-     * Multiply operation.
+     * Subtract operation. Возвращает новый объект (this - b)
+     * @param b subtrahend
+     * @return new Complex object whose value is (this - b)
+     */
+    public Complex minus(Complex b) {
+        return new Complex(re - b.re, im - b.im);
+    }
+
+    /**
+     * Multiply operation. (Мутация this)
      * @param  b multiplier
      * @return this Complex object whose value is this * b
      */
@@ -86,10 +111,25 @@ public class Complex {
     }
 
     /**
+     * Divide operation. Возвращает новый объект (this / b)
+     * @param b divisor
+     * @return new Complex object whose value is this / b
+     */
+    public Complex div(Complex b) {
+        double denom = b.re * b.re + b.im * b.im;
+        if (denom == 0) {
+            throw new ArithmeticException("Division by zero");
+        }
+        double real = (re * b.re + im * b.im) / denom;
+        double imag = (im * b.re - re * b.im) / denom;
+        return new Complex(real, imag);
+    }
+
+    /**
      * Square of Complex object's length, we're using square of length to 
      * eliminate the computation of square root
      * @return square of length
-    */
+     */
     public double lengthSQ() {
         return re * re + im * im;
     }

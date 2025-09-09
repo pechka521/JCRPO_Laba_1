@@ -1,3 +1,33 @@
+/*
+ * Copyright (c) 2013, 2014, Oracle and/or its affiliates. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ *   - Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *
+ *   - Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *
+ *   - Neither the name of Oracle nor the names of its
+ *     contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+ * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+ * THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR
+ * PURPOSE ARE DISCLAIMED.  IN NO EVENT SHALL THE COPYRIGHT OWNER OR
+ * CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+ * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+ * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+ * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+ * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+ * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package demo.parallel;
 
 import java.util.concurrent.atomic.AtomicInteger;
@@ -10,7 +40,7 @@ import javafx.scene.paint.Color;
  * Task to render Mandelbrot set using given parameters. See {@link
  * #MandelbrotSetTask(boolean, javafx.scene.image.PixelWriter, int, int,
  * double, double, double, double, double, double, double, double, boolean)
- * constructor} for parameters list. The task returns time in milliseconds as 
+ * constructor} for parameters list. The task returns time in milliseconds as
  * its calculated value.
  *
  * <p><i>
@@ -32,13 +62,13 @@ class MandelbrotSetTask extends Task<Long> {
 
     /**
      * This is the square of max radius, Mandelbrot set contained in the closed
-     * disk of radius 2 around the origin plus some area around, so 
+     * disk of radius 2 around the origin plus some area around, so
      * LENGTH_BOUNDARY is 6.
      */
     private static final double LENGTH_BOUNDARY = 6d;
 
     /**
-     * For antialiasing we break each pixel into 3x3 grid and interpolate 
+     * For antialiasing we break each pixel into 3x3 grid and interpolate
      * between values calculated on those grid positions
      */
     private static final int ANTIALIASING_BASE = 3;
@@ -163,7 +193,7 @@ class MandelbrotSetTask extends Task<Long> {
     }
 
     /**
-     * Returns current task execution time while task is running and total 
+     * Returns current task execution time while task is running and total
      * task time when task is finished
      * @return task time in milliseconds
      */
@@ -183,7 +213,7 @@ class MandelbrotSetTask extends Task<Long> {
     @Override
     protected Long call() throws Exception {
         synchronized(pixelWriter) {
-            // Prepares an image 
+            // Prepares an image
             for (int x = 0; x < width; x++) {
                 for (int y = 0; y < height; y++) {
                     pixelWriter.setColor(x, y, Color.TRANSPARENT);
@@ -233,24 +263,31 @@ class MandelbrotSetTask extends Task<Long> {
      * Calculates number of iterations a complex quadratic polynomials
      * stays within a disk of some finite radius for a given complex number.
      *
-     * This number is used to choose a color for this pixel for precalculated 
-     * color tables.
+     * This number is used to choose a color for this pixel for precalculated
+     * color tables. Новое уравнение для 7c: z = (z^2 + c) / (z + 1), используя +, *, /
      *
-     * @param comp a complex number used for calculation
+     * @param comp a complex number used for calculation (c)
      * @return number of iterations a value stayed within a given disk.
      */
     private int calc(Complex comp) {
         int count = 0;
-        Complex c = new Complex(0, 0);
+        Complex z = new Complex(0, 0);
+        Complex one = new Complex(1, 0);  // Константа +1 для избежания деления на 0 в начале
         do {
-            c = c.times(c).plus(comp);
+            Complex zCopy = new Complex(z.getRe(), z.getIm());  // Копируем z через геттеры
+            Complex temp = zCopy.times(z).plus(comp);  // z^2 + c (times мутирует копию)
+            Complex denomCopy = new Complex(z.getRe(), z.getIm()).plus(one);  // z + 1 (plus мутирует копию)
+            if (denomCopy.lengthSQ() == 0) {  // Проверка на 0 для div
+                break;  // Если деление на 0, прерываем
+            }
+            z = temp.div(denomCopy);  // (z^2 + c) / (z + 1), используя div (возвращает новый)
             count++;
-        } while (count < CAL_MAX_COUNT && c.lengthSQ() < LENGTH_BOUNDARY);
+        } while (count < CAL_MAX_COUNT && z.lengthSQ() < LENGTH_BOUNDARY);
         return count;
     }
 
     /**
-     * Calculates a color of a given pixel on the image using 
+     * Calculates a color of a given pixel on the image using
      * {@link #calc(demo.parallel.Complex) } method.
      * @param x x coordinate of the pixel in the image
      * @param y y coordinate of the pixel in the image
@@ -297,7 +334,7 @@ class MandelbrotSetTask extends Task<Long> {
 
     /**
      * Returns a color for a given iteration count.
-     * @param count number of iterations return by 
+     * @param count number of iterations return by
      * {@link #calc(demo.parallel.Complex)} method
      * @return color from pre-calculated table
      */
@@ -309,14 +346,14 @@ class MandelbrotSetTask extends Task<Long> {
     }
 
     /**
-     * Pre-calculated colors table
+     * Pre-calculated colors table (из 7a: синий-фиолетовый-зелёный градиент)
      */
     static final Color[] colors = new Color[256];
 
     static {
 
         /**
-         * Color stops for colors table: color values (изменено на синий-фиолетовый-зелёный градиент)
+         * Color stops for colors table: color values
          */
         Color[] cc = {
                 Color.rgb(0, 0, 40),  // Тёмно-синий
